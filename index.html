@@ -36,7 +36,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .stb{padding:13px 8px;font-size:13px;font-weight:600;text-align:center;border:none;background:transparent;color:#9ca3af;min-height:48px;width:100%}
 .stb.on-g{color:#16a34a;background:#f0fdf4;box-shadow:inset 0 -2px 0 #22c55e}
 .stb.on-b{color:#2563eb;background:#eff6ff;box-shadow:inset 0 -2px 0 #2563eb}
-.sysrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sysrow{display:grid;grid-template-columns:1fr;gap:9px}
 .sopt{border:2px solid #e5e7eb;border-radius:10px;padding:13px 11px;background:#fff;position:relative;min-height:10px}
 .sopt.sel-g{border-color:#22c55e;background:#f0fdf4}
 .sopt.sel-b{border-color:#2563eb;background:#eff6ff}
@@ -199,8 +199,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;heigh
       <div class="ct">Monthly usage</div>
       <div class="slrow">
         <div class="slhdr"><span class="sllbl">Units consumed per month</span><span class="slval slval-g" id="d-units">200 units</span></div>
-        <input type="range" min="30" max="600" step="10" value="200" id="sl">
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-top:5px"><span>30</span><span>200</span><span>400</span><span>600</span></div>
+        <input type="range" min="30" max="1500" step="10" value="200" id="sl">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-top:5px"><span>30</span><span>400</span><span>800</span><span>1500</span></div>
       </div>
       <div id="tbd"></div>
       <div class="ct" style="margin-top:4px">District</div>
@@ -218,7 +218,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;heigh
         <div class="db" data-dist="Srinagar">Srinagar</div>
         <div class="db" data-dist="Other">Other</div>
       </div>
-      <div id="dom-note"><div class="gnote"><b>PM Surya Ghar subsidy:</b> ₹94,800 for both 3 kW &amp; 5 kW. We handle all paperwork.</div></div>
+      <div id="dom-note"><div class="gnote"><b>PM Surya Ghar subsidy:</b> ₹94,800 for 3 kW &amp; 5 kW. 10 kW — check current scheme eligibility. We handle all paperwork.</div></div>
       <div id="com-note" style="display:none"><div class="bnote"><b>Commercial net metering:</b> Sell surplus units back to JPDCL. Fastest payback in J&amp;K.</div></div>
     </div>
     <div class="card">
@@ -247,7 +247,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;heigh
       </div>
       <div class="slrow" style="margin-bottom:10px">
         <div class="slhdr"><span class="sllbl">Interest rate</span><span class="slval slval-g" id="emi-rate-val">10%</span></div>
-        <input type="range" min="7" max="16" step="0.5" value="10" id="emi-rate">
+        <input type="range" min="5" max="16" step="0.5" value="10" id="emi-rate" oninput="this.value=Math.max(5,parseFloat(this.value))">
       </div>
       <div class="mgrid" style="margin-bottom:10px" id="emi-grid"></div>
       <div style="font-size:11px;color:#9ca3af;text-align:center">Loan on full installation cost. Subsidy of ₹94,800 received separately.</div>
@@ -421,10 +421,10 @@ var dist = 'Jammu';
 
 // Default costs — used to auto-fill when switching system size
 var DEFAULTS = {
-  dom: { 3: {cost:100000, sub:94800}, 5: {cost:200000, sub:94800} },
-  com: { 3: {cost:100000, sub:0},     5: {cost:200000, sub:0} }
+  dom: { 3:{cost:100000,sub:94800}, 5:{cost:200000,sub:94800}, 10:{cost:350000,sub:94800} },
+  com: { 3:{cost:100000,sub:0},     5:{cost:200000,sub:0},     10:{cost:350000,sub:0} }
 };
-var GEN = { 3: 415, 5: 625 };
+var GEN = { 3:415, 5:625, 10:1350 };
 
 // Read live cost & subsidy from the editable inputs
 function getCost() { return parseInt(document.getElementById('inp-cost').value, 10) || 0; }
@@ -473,62 +473,65 @@ function inrL(n) { return n >= 100000 ? '₹' + (n/100000).toFixed(1) + ' L' : i
 
 // ── RENDER SYSTEM CARDS ───────────────────────────────
 function renderSys() {
-  var d = (seg === 'dom');
+  var d  = (seg === 'dom');
   var sc = d ? 'sel-g' : 'sel-b';
   var tg = d ? 'tag-g' : 'tag-b';
   document.getElementById('sysrow').innerHTML =
-    '<div class="sopt ' + (kw===3 ? sc : '') + '" id="opt3">' +
+    '<div class="sopt ' + (kw===3  ? sc : '') + '" id="opt3">' +
       '<div class="skw">3 kW</div>' +
       '<div class="slbl">' + (d ? 'Small home' : 'Small shop') + '</div>' +
-      '<div class="sspec">~<b>380–450</b> units/mo<br><b>5–6</b> panels<br>~<b>100–120</b> sq ft</div>' +
+      '<div class="sspec">~<b>380–450</b> units/mo · <b>5–6</b> panels · ~<b>100–120</b> sq ft</div>' +
     '</div>' +
-    '<div class="sopt ' + (kw===5 ? sc : '') + '" id="opt5">' +
+    '<div class="sopt ' + (kw===5  ? sc : '') + '" id="opt5">' +
       '<div class="tag ' + tg + '">POPULAR</div>' +
       '<div class="skw">5 kW</div>' +
       '<div class="slbl">' + (d ? 'Medium home' : 'Medium shop') + '</div>' +
-      '<div class="sspec">~<b>600–650</b> units/mo<br><b>8–10</b> panels<br>~<b>200</b> sq ft</div>' +
+      '<div class="sspec">~<b>600–650</b> units/mo · <b>8–10</b> panels · ~<b>200</b> sq ft</div>' +
+    '</div>' +
+    '<div class="sopt ' + (kw===10 ? sc : '') + '" id="opt10">' +
+      '<div class="skw">10 kW</div>' +
+      '<div class="slbl">' + (d ? 'Large home' : 'Large shop') + '</div>' +
+      '<div class="sspec">~<b>1200–1500</b> units/mo · <b>16–20</b> panels · ~<b>350</b> sq ft</div>' +
     '</div>';
-  // re-attach listeners after innerHTML rebuild
-  document.getElementById('opt3').addEventListener('click', function() {
-    kw = 3;
-    document.getElementById('inp-cost').value = DEFAULTS[seg][3].cost;
-    document.getElementById('inp-sub').value  = DEFAULTS[seg][3].sub;
+  function selKw(k) {
+    kw = k;
+    document.getElementById('inp-cost').value = DEFAULTS[seg][k].cost;
+    document.getElementById('inp-sub').value  = DEFAULTS[seg][k].sub;
     renderSys(); calc();
-  });
-  document.getElementById('opt5').addEventListener('click', function() {
-    kw = 5;
-    document.getElementById('inp-cost').value = DEFAULTS[seg][5].cost;
-    document.getElementById('inp-sub').value  = DEFAULTS[seg][5].sub;
-    renderSys(); calc();
-  });
+  }
+  document.getElementById('opt3').addEventListener('click',  function() { selKw(3);  });
+  document.getElementById('opt5').addEventListener('click',  function() { selKw(5);  });
+  document.getElementById('opt10').addEventListener('click', function() { selKw(10); });
 }
 
 // ── CALC ──────────────────────────────────────────────
+var calcLastResult = null;
+
 function calc() {
   var u = parseInt(document.getElementById('sl').value, 10);
   document.getElementById('d-units').textContent = u + ' units';
 
-  var d = (seg === 'dom');
-  var bFn = d ? billD : billC;
+  var d    = (seg === 'dom');
+  var bFn  = d ? billD : billC;
   var cost = getCost();
   var sub  = getSub();
-  var cur = bFn(u);
+  var cur  = bFn(u);
   var uAfter = Math.max(0, u - GEN[kw]);
   var bAfter = bFn(uAfter).b;
-  var mo = cur.b - bAfter;
-  var yr = mo * 12;
-  var net = Math.max(0, cost - sub);
-  var pb = yr > 0 ? cost / yr : 99;
-  var esc = d ? 0.05 : 0.06;
-  var life = yr > 0 ? yr * ((Math.pow(1+esc, 25) - 1) / esc) : 0;
+  var mo   = cur.b - bAfter;
+  var yr   = mo * 12;
+  var net  = Math.max(0, cost - sub);
+  var pb   = yr > 0 ? cost / yr : 99;
+  var esc  = d ? 0.05 : 0.06;
+  var life = yr > 0 ? yr * ((Math.pow(1 + esc, 25) - 1) / esc) : 0;
+
   updateCostSummary();
 
   // tariff box
-  var tc = d ? 'tbox-g' : 'tbox-b';
-  var ttc = d ? 'ttl-g' : 'ttl-b';
+  var tc  = d ? 'tbox-g' : 'tbox-b';
+  var ttc = d ? 'ttl-g'  : 'ttl-b';
   var tec = d ? 'teff-g' : 'teff-b';
-  var h = '<div class="tbox ' + tc + '">' +
-    '<div class="ttl ' + ttc + '">Bill breakdown (' + (d ? 'domestic' : 'commercial SP') + ')</div>';
+  var h   = '<div class="tbox ' + tc + '"><div class="ttl ' + ttc + '">Bill breakdown (' + (d ? 'domestic' : 'commercial SP') + ')</div>';
   for (var i = 0; i < cur.rows.length; i++) {
     var row = cur.rows[i];
     h += '<div class="tr"><span>' + row.l + '</span><b>' + inr(row.u * row.r) + '</b></div>';
@@ -542,20 +545,20 @@ function calc() {
   document.getElementById('mgrid').innerHTML =
     '<div class="met ' + hg + '"><div class="ml">Monthly saving</div><div class="mv">' + inr(mo) + '</div></div>' +
     '<div class="met ' + hg + '"><div class="ml">Annual saving</div><div class="mv">' + inr(yr) + '</div></div>' +
-    '<div class="met"><div class="ml">Installation cost</div><div class="mv">' + inr(s.cost) + '</div>' + (d ? '<div class="ms">Subsidy: ' + inr(s.sub) + '</div>' : '') + '</div>' +
+    '<div class="met"><div class="ml">Installation cost</div><div class="mv">' + inr(cost) + '</div>' + (sub > 0 ? '<div class="ms">Subsidy: ' + inr(sub) + '</div>' : '') + '</div>' +
     '<div class="met"><div class="ml">Net cost</div><div class="mv">' + inr(net) + '</div><div class="ms">after subsidy</div></div>' +
-    '<div class="met"><div class="ml">Payback (full cost)</div><div class="mv">' + (pb < 50 ? pb.toFixed(1) + ' yrs' : '—') + '</div></div>' +
-    '<div class="met ' + hg + '"><div class="ml">25-year savings</div><div class="mv">' + inrL(life) + '</div><div class="ms">' + (d?5:6) + '% annual tariff rise</div></div>';
+    '<div class="met"><div class="ml">Payback period</div><div class="mv">' + (pb < 50 ? pb.toFixed(1) + ' yrs' : '—') + '</div><div class="ms">on full ₹' + inr(cost) + ' cost</div></div>' +
+    '<div class="met ' + hg + '"><div class="ml">25-year savings</div><div class="mv">' + inrL(life) + '</div><div class="ms">' + (d ? 5 : 6) + '% annual tariff rise</div></div>';
 
   // payback bars
   var bars = '';
-  var yrs = [3, 5, 8, 12];
+  var yrs  = [3, 5, 8, 12];
   for (var j = 0; j < yrs.length; j++) {
-    var y = yrs[j];
-    var pct = Math.min(100, (y / pb) * 100).toFixed(0);
+    var y    = yrs[j];
+    var pct  = Math.min(100, (y / pb) * 100).toFixed(0);
     var done = y >= pb;
-    var col = done ? (d ? '#22c55e' : '#2563eb') : '#f59e0b';
-    var lc  = done ? (d ? '#16a34a' : '#2563eb') : '#9ca3af';
+    var col  = done ? (d ? '#22c55e' : '#2563eb') : '#f59e0b';
+    var lc   = done ? (d ? '#16a34a' : '#2563eb') : '#9ca3af';
     bars += '<div class="pbrow">' +
       '<div class="pbhdr"><span style="font-size:12px;color:#6b7280">Year ' + y + '</span>' +
       '<span style="font-size:12px;color:' + lc + ';">' + (done ? '✓ Paid back' : 'Recovering') + '</span></div>' +
@@ -567,11 +570,11 @@ function calc() {
   var trows = '', cum = 0;
   var yrList = [1, 2, 3, 5, 8, 10, 15, 20, 25];
   for (var k = 0; k < yrList.length; k++) {
-    var yr2 = yrList[k];
-    var a = Math.round(yr * Math.pow(1 + esc, yr2 - 1));
+    var yr2  = yrList[k];
+    var a    = Math.round(yr * Math.pow(1 + esc, yr2 - 1));
     cum += a;
     var diff = cum - cost;
-    var pc = diff > 0 ? (d ? 'pos-g' : 'pos-b') : 'neg';
+    var pc   = diff > 0 ? (d ? 'pos-g' : 'pos-b') : 'neg';
     trows += '<tr><td>Yr ' + yr2 + '</td><td>' + inr(a) + '</td><td>' + inr(cum) + '</td><td class="' + pc + '">' + (diff > 0 ? '+' : '') + inr(diff) + '</td></tr>';
   }
   document.getElementById('yrtbl').innerHTML = trows;
@@ -584,22 +587,16 @@ function calc() {
     'Eff. rate: <b>₹' + cur.r.toFixed(2) + '/unit</b><br>' +
     'Monthly saving: <b style="color:' + gc + '">' + inr(mo) + '</b> · Annual: <b style="color:' + gc + '">' + inr(yr) + '</b><br>' +
     'Installation: <b>' + inr(cost) + '</b>' + (sub > 0 ? ' · Subsidy: <b>' + inr(sub) + '</b>' : '') + '<br>' +
-    'Net cost: <b>' + inr(net) + '</b> · Payback (on full cost): <b>' + pb.toFixed(1) + ' yrs</b><br>' +
+    'Net cost: <b>' + inr(net) + '</b> · Payback: <b>' + pb.toFixed(1) + ' yrs</b> (on full cost)<br>' +
     '25-yr savings: <b style="color:' + gc + '">' + inrL(life) + '</b>';
   var qsel = document.getElementById('qs');
   if (qsel) qsel.innerHTML = qs;
 
-  return { mo:mo, yr:yr, net:net, pb:pb, life:life, cur:cur, u:u, cost:cost, sub:sub };
-}
-
-var calcLastResult = null;
-var _origCalc = calc;
-calc = function() {
-  var r = _origCalc();
-  calcLastResult = r;
+  var result = { mo:mo, yr:yr, net:net, pb:pb, life:life, cur:cur, u:u, cost:cost, sub:sub };
+  calcLastResult = result;
   calcEMI();
-  return r;
-};
+  return result;
+}
 
 // ── EMI CALC ──────────────────────────────────────────
 function calcEMI() {
