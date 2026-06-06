@@ -607,9 +607,10 @@ function calcEMI() {
 
   var r       = calcLastResult;
   var monthly = r ? r.mo : 0;
-  var P       = getCost();
+  var cost    = getCost();
   var sub     = getSub();
-  var net     = Math.max(0, P - sub);
+  var net     = Math.max(0, cost - sub);
+  var P       = net;   // loan is on net cost after subsidy
   var i  = annRate / 100 / 12;
   var n  = tenure * 12;
   var emi = i === 0 ? P / n : Math.round(P * i * Math.pow(1+i,n) / (Math.pow(1+i,n) - 1));
@@ -623,7 +624,7 @@ function calcEMI() {
   var negCol     = '#ef4444';
 
   document.getElementById('emi-grid').innerHTML =
-    '<div class="met"><div class="ml">Monthly EMI</div><div class="mv" style="color:#ef4444">' + inr(emi) + '</div><div class="ms">on ₹' + inr(P) + ' loan</div></div>' +
+    '<div class="met"><div class="ml">Monthly EMI</div><div class="mv" style="color:#ef4444">' + inr(emi) + '</div><div class="ms">on ' + inr(P) + ' loan (after subsidy)</div></div>' +
     '<div class="met ' + hg + '"><div class="ml">Monthly saving</div><div class="mv">' + inr(monthly) + '</div><div class="ms">from solar</div></div>' +
     '<div class="met ' + (netMonthly >= 0 ? hg : 'met') + '" style="grid-column:1/-1">' +
       '<div class="ml">Net monthly cash flow</div>' +
@@ -637,14 +638,14 @@ function calcEMI() {
   var pitchEl = document.getElementById('emi-pitch');
   if (netMonthly >= 0) {
     pitchEl.innerHTML =
-      '"' + (sub > 0 ? 'After the ' + inr(sub) + ' government subsidy, your effective out-of-pocket is just <b>' + inr(net) + '</b>. ' : '') +
-      'On the full loan of <b>' + inr(P) + '</b>, your EMI is <b>' + inr(emi) + '/mo</b> and your electricity saving is <b>' + inr(monthly) + '/mo</b>. ' +
+      '"' + (sub > 0 ? 'After the ' + inr(sub) + ' government subsidy, you only need to finance <b>' + inr(P) + '</b>. ' : '') +
+      'Your EMI is just <b>' + inr(emi) + '/mo</b> and your electricity saving is <b>' + inr(monthly) + '/mo</b>. ' +
       'You are <b style=\'color:#16a34a\'>₹' + inr(netMonthly) + ' better off every month</b> from day one — the system pays for itself while you use it."';
   } else {
     pitchEl.innerHTML =
       '"Your EMI is <b>' + inr(emi) + '/mo</b> and your saving is <b>' + inr(monthly) + '/mo</b>. ' +
-      'Try a longer tenure to bring the EMI down — or switch to 5 kW to maximise savings.' +
-      (sub > 0 ? ' After the ' + inr(sub) + ' subsidy your real cost is just <b>' + inr(net) + '</b>.' : '') + '"';
+      'Try a longer tenure to bring the EMI down — or switch to a larger system to maximise savings.' +
+      (sub > 0 ? ' After the ' + inr(sub) + ' subsidy you only need to finance <b>' + inr(P) + '</b>.' : '') + '"';
   }
 }
 
