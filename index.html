@@ -216,6 +216,25 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;heigh
         <tbody id="yrtbl"></tbody>
       </table>
     </div>
+    <!-- EMI CALCULATOR -->
+    <div class="card" id="emi-card">
+      <div class="ct">💡 EMI vs savings — the closer</div>
+      <div style="background:#f0fdf4;border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:12px;margin-bottom:12px">
+        <div style="font-size:12px;color:#16a34a;font-weight:600;margin-bottom:6px">THE PITCH TO YOUR CUSTOMER</div>
+        <div style="font-size:13px;color:#374151;line-height:1.6" id="emi-pitch">—</div>
+      </div>
+      <div class="slrow" style="margin-bottom:10px">
+        <div class="slhdr"><span class="sllbl">Loan tenure</span><span class="slval slval-g" id="emi-tenure-val">5 years</span></div>
+        <input type="range" min="1" max="10" step="1" value="5" id="emi-tenure">
+      </div>
+      <div class="slrow" style="margin-bottom:10px">
+        <div class="slhdr"><span class="sllbl">Interest rate</span><span class="slval slval-g" id="emi-rate-val">10%</span></div>
+        <input type="range" min="7" max="16" step="0.5" value="10" id="emi-rate">
+      </div>
+      <div class="mgrid" style="margin-bottom:10px" id="emi-grid"></div>
+      <div style="font-size:11px;color:#9ca3af;text-align:center">Loan on full installation cost. Subsidy of ₹94,800 received separately.</div>
+    </div>
+
     <button class="btnp btnp-g" id="cta">Create quote for this customer →</button>
     <div style="height:16px"></div>
   </div>
@@ -457,7 +476,7 @@ function calc() {
   var mo = cur.b - bAfter;
   var yr = mo * 12;
   var net = s.cost - s.sub;
-  var pb = yr > 0 ? net / yr : 99;
+  var pb = yr > 0 ? s.cost / yr : 99;
   var esc = d ? 0.05 : 0.06;
   var life = yr > 0 ? yr * ((Math.pow(1+esc, 25) - 1) / esc) : 0;
 
@@ -482,7 +501,7 @@ function calc() {
     '<div class="met ' + hg + '"><div class="ml">Annual saving</div><div class="mv">' + inr(yr) + '</div></div>' +
     '<div class="met"><div class="ml">Installation cost</div><div class="mv">' + inr(s.cost) + '</div>' + (d ? '<div class="ms">Subsidy: ' + inr(s.sub) + '</div>' : '') + '</div>' +
     '<div class="met"><div class="ml">Net cost</div><div class="mv">' + inr(net) + '</div><div class="ms">after subsidy</div></div>' +
-    '<div class="met"><div class="ml">Payback period</div><div class="mv">' + (pb < 50 ? pb.toFixed(1) + ' yrs' : '—') + '</div></div>' +
+    '<div class="met"><div class="ml">Payback (full cost)</div><div class="mv">' + (pb < 50 ? pb.toFixed(1) + ' yrs' : '—') + '</div></div>' +
     '<div class="met ' + hg + '"><div class="ml">25-year savings</div><div class="mv">' + inrL(life) + '</div><div class="ms">' + (d?5:6) + '% annual tariff rise</div></div>';
 
   // payback bars
@@ -508,7 +527,7 @@ function calc() {
     var yr2 = yrList[k];
     var a = Math.round(yr * Math.pow(1 + esc, yr2 - 1));
     cum += a;
-    var diff = cum - net;
+    var diff = cum - s.cost;
     var pc = diff > 0 ? (d ? 'pos-g' : 'pos-b') : 'neg';
     trows += '<tr><td>Yr ' + yr2 + '</td><td>' + inr(a) + '</td><td>' + inr(cum) + '</td><td class="' + pc + '">' + (diff > 0 ? '+' : '') + inr(diff) + '</td></tr>';
   }
@@ -522,7 +541,7 @@ function calc() {
     'Eff. rate: <b>₹' + cur.r.toFixed(2) + '/unit</b><br>' +
     'Monthly saving: <b style="color:' + gc + '">' + inr(mo) + '</b> · Annual: <b style="color:' + gc + '">' + inr(yr) + '</b><br>' +
     'Installation: <b>' + inr(s.cost) + '</b>' + (d ? ' · Subsidy: <b>' + inr(s.sub) + '</b>' : '') + '<br>' +
-    'Net cost: <b>' + inr(net) + '</b> · Payback: <b>' + pb.toFixed(1) + ' yrs</b><br>' +
+    'Net cost: <b>' + inr(net) + '</b> · Payback (on full cost): <b>' + pb.toFixed(1) + ' yrs</b><br>' +
     '25-yr savings: <b style="color:' + gc + '">' + inrL(life) + '</b>';
   var qsel = document.getElementById('qs');
   if (qsel) qsel.innerHTML = qs;
@@ -530,7 +549,68 @@ function calc() {
   return { mo:mo, yr:yr, net:net, pb:pb, life:life, cur:cur, u:u, s:s };
 }
 
-// ── SEGMENT SWITCH ────────────────────────────────────
+var calcLastResult = null;
+var _origCalc = calc;
+calc = function() {
+  var r = _origCalc();
+  calcLastResult = r;
+  calcEMI();
+  return r;
+};
+
+// ── EMI CALC ──────────────────────────────────────────
+function calcEMI() {
+  var tenure  = parseInt(document.getElementById('emi-tenure').value, 10);
+  var annRate = parseFloat(document.getElementById('emi-rate').value);
+  document.getElementById('emi-tenure-val').textContent = tenure + (tenure === 1 ? ' year' : ' years');
+  document.getElementById('emi-rate-val').textContent   = annRate.toFixed(1) + '%';
+
+  var s       = SYS[seg][kw];
+  var r       = calcLastResult;
+  var monthly = r ? r.mo  : 0;
+  var annual  = r ? r.yr  : 0;
+
+  // EMI formula on full installation cost
+  var P  = s.cost;
+  var i  = annRate / 100 / 12;
+  var n  = tenure * 12;
+  var emi = i === 0 ? P / n : Math.round(P * i * Math.pow(1+i,n) / (Math.pow(1+i,n) - 1));
+
+  var netMonthly = monthly - emi;   // positive = customer is better off
+  var totalPaid  = emi * n;
+  var totalInt   = totalPaid - P;
+  var d          = (seg === 'dom');
+  var hg         = d ? 'met-hg' : 'met-hb';
+  var posCol     = d ? '#16a34a' : '#2563eb';
+  var negCol     = '#ef4444';
+
+  document.getElementById('emi-grid').innerHTML =
+    '<div class="met"><div class="ml">Monthly EMI</div><div class="mv" style="color:#ef4444">' + inr(emi) + '</div><div class="ms">on ₹' + inr(P) + ' loan</div></div>' +
+    '<div class="met ' + hg + '"><div class="ml">Monthly saving</div><div class="mv">' + inr(monthly) + '</div><div class="ms">from solar</div></div>' +
+    '<div class="met ' + (netMonthly >= 0 ? hg : 'met') + '" style="grid-column:1/-1">' +
+      '<div class="ml">Net monthly cash flow</div>' +
+      '<div class="mv" style="color:' + (netMonthly >= 0 ? posCol : negCol) + '">' +
+        (netMonthly >= 0 ? '+' : '') + inr(netMonthly) +
+      '</div>' +
+      '<div class="ms">' + (netMonthly >= 0 ? '✓ Savings cover the EMI — cash flow positive from day one' : 'EMI exceeds savings by ' + inr(Math.abs(netMonthly)) + '/mo') + '</div>' +
+    '</div>';
+
+  // pitch text
+  var pitchEl = document.getElementById('emi-pitch');
+  if (netMonthly >= 0) {
+    pitchEl.innerHTML =
+      '"After the ₹94,800 government subsidy, your effective out-of-pocket is just <b>' + inr(P - 94800) + '</b>. ' +
+      'Even on the full loan of <b>' + inr(P) + '</b>, your EMI is <b>' + inr(emi) + '/mo</b> and your electricity saving is <b>' + inr(monthly) + '/mo</b>. ' +
+      'You are <b style=\'color:#16a34a\'>₹' + inr(netMonthly) + ' better off every month</b> from day one — the solar system pays for itself while you use it."';
+  } else {
+    pitchEl.innerHTML =
+      '"Your EMI is <b>' + inr(emi) + '/mo</b> and your saving is <b>' + inr(monthly) + '/mo</b>. ' +
+      'Try a longer tenure to bring the EMI down — or increase to 5 kW to maximise savings. ' +
+      'After the ₹94,800 subsidy your real cost is just <b>' + inr(P - 94800) + '</b>."';
+  }
+}
+
+
 function setSeg(s) {
   seg = s;
   var d = (seg === 'dom');
@@ -728,6 +808,10 @@ window.addEventListener('DOMContentLoaded', function() {
   document.getElementById('newqbtn').addEventListener('click', newQ);
   document.getElementById('viewleadsbtn').addEventListener('click', function() { goTab('leads'); });
   document.getElementById('exportbtn').addEventListener('click', exportCSV);
+
+  // EMI sliders
+  document.getElementById('emi-tenure').addEventListener('input', calcEMI);
+  document.getElementById('emi-rate').addEventListener('input', calcEMI);
 
   // System options (initial render attaches listeners inside renderSys)
   renderSys();
